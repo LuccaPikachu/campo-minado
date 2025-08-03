@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campo Minado</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        h1 {
+            color: white;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        .game-info {
+            margin: 20px 0;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            background: rgba(255,255,255,0.2);
+            padding: 10px 20px;
+            border-radius: 15px;
+            display: inline-block;
+            backdrop-filter: blur(10px);
+        }
+        
+        .game-board {
+            display: inline-block;
+            border: 3px solid #2d5016;
+            background: linear-gradient(45deg, #4CAF50, #66BB6A);
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+        
+        .cell {
+            width: 30px;
+            height: 30px;
+            border: 2px solid #2d5016;
+            background: linear-gradient(45deg, #81C784, #A5D6A7);
+            display: inline-block;
+            text-align: center;
+            line-height: 26px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            user-select: none;
+            box-sizing: border-box;
+            vertical-align: top;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+        
+        .cell:hover {
+            background: linear-gradient(45deg, #A5D6A7, #C8E6C9);
+            transform: scale(1.05);
+        }
+        
+        .cell.revealed {
+            border: 2px inset #2d5016;
+            background: linear-gradient(45deg, #E8F5E8, #F1F8E9);
+        }
+        
+        .cell.mine {
+            background: linear-gradient(45deg, #ff1744, #f44336);
+            color: white;
+            animation: pulse 0.5s ease-in-out;
+        }
+        
+        .cell.flagged {
+            background: linear-gradient(45deg, #FFD54F, #FFEB3B);
+            color: #d32f2f;
+        }
+        
+        .row {
+            display: block;
+            height: 34px;
+        }
+        
+        .controls {
+            margin: 20px 0;
+        }
+        
+        button {
+            padding: 12px 25px;
+            font-size: 16px;
+            cursor: pointer;
+            background: linear-gradient(45deg, #4CAF50, #66BB6A);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+            transition: all 0.3s ease;
+        }
+        
+        button:hover {
+            background: linear-gradient(45deg, #66BB6A, #81C784);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.6);
+        }
+        
+        .status {
+            font-size: 20px;
+            font-weight: bold;
+            margin: 10px 0;
+            background: rgba(255,255,255,0.2);
+            padding: 10px 20px;
+            border-radius: 15px;
+            display: inline-block;
+            backdrop-filter: blur(10px);
+        }
+        
+        .win { 
+            color: #4CAF50; 
+            text-shadow: 0 0 10px #4CAF50;
+        }
+        .lose { 
+            color: #f44336; 
+            text-shadow: 0 0 10px #f44336;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .controls {
+            margin: 20px 0;
+            color: white;
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 15px;
+            display: inline-block;
+            backdrop-filter: blur(10px);
+        }
+    </style>
+</head>
+<body>
+    <h1>🚩 Campo Minado 🚩</h1>
+    
+    <div class="game-info">
+        <span>Minas: <span id="mineCount">10</span></span> | 
+        <span>Tempo: <span id="timer">0</span>s</span>
+    </div>
+    
+    <div class="status" id="status"></div>
+    
+    <div class="game-board" id="gameBoard"></div>
+    
+    <div class="controls">
+        <button onclick="newGame()">Novo Jogo</button>
+        <p><strong>Como jogar:</strong><br>
+        Clique esquerdo: revelar célula<br>
+        Clique direito: marcar/desmarcar bandeira</p>
+    </div>
+
+    <script>
+        class CampoMinado {
+            constructor(rows = 8, cols = 8, mines = 10) {
+                this.rows = rows;
+                this.cols = cols;
+                this.totalMines = mines;
+                this.board = [];
+                this.revealed = [];
+                this.flagged = [];
+                this.gameOver = false;
+                this.gameWon = false;
+                this.firstClick = true;
+                this.timer = 0;
+                this.timerInterval = null;
+                this.flagCount = 0;
+                
+                this.initBoard();
+                this.renderBoard();
+                this.updateMineCount();
+            }
+            
+            initBoard() {
+                for (let i = 0; i < this.rows; i++) {
+                    this.board[i] = [];
+                    this.revealed[i] = [];
+                    this.flagged[i] = [];
+                    for (let j = 0; j < this.cols; j++) {
+                        this.board[i][j] = 0;
+                        this.revealed[i][j] = false;
+                        this.flagged[i][j] = false;
+                    }
+                }
+            }
+            
+            placeMines(excludeRow, excludeCol) {
+                let minesPlaced = 0;
+                while (minesPlaced < this.totalMines) {
+                    const row = Math.floor(Math.random() * this.rows);
+                    const col = Math.floor(Math.random() * this.cols);
+                    
+                    if (this.board[row][col] !== -1 && !(row === excludeRow && col === excludeCol)) {
+                        this.board[row][col] = -1;
+                        minesPlaced++;
+                    }
+                }
+                this.calculateNumbers();
+            }
+            
+            calculateNumbers() {
+                for (let i = 0; i < this.rows; i++) {
+                    for (let j = 0; j < this.cols; j++) {
+                        if (this.board[i][j] !== -1) {
+                            let count = 0;
+                            for (let di = -1; di <= 1; di++) {
+                                for (let dj = -1; dj <= 1; dj++) {
+                                    const ni = i + di;
+                                    const nj = j + dj;
+                                    if (ni >= 0 && ni < this.rows && nj >= 0 && nj < this.cols) {
+                                        if (this.board[ni][nj] === -1) count++;
+                                    }
+                                }
+                            }
+                            this.board[i][j] = count;
+                        }
+                    }
+                }
+            }
+            
+            reveal(row, col) {
+                if (this.gameOver || this.revealed[row][col] || this.flagged[row][col]) return;
+                
+                if (this.firstClick) {
+                    this.placeMines(row, col);
+                    this.firstClick = false;
+                    this.startTimer();
+                }
+                
+                this.revealed[row][col] = true;
+                
+                if (this.board[row][col] === -1) {
+                    this.gameOver = true;
+                    this.endGame(false);
+                    return;
+                }
+                
+                if (this.board[row][col] === 0) {
+                    for (let di = -1; di <= 1; di++) {
+                        for (let dj = -1; dj <= 1; dj++) {
+                            const ni = row + di;
+                            const nj = col + dj;
+                            if (ni >= 0 && ni < this.rows && nj >= 0 && nj < this.cols) {
+                                this.reveal(ni, nj);
+                            }
+                        }
+                    }
+                }
+                
+                this.checkWin();
+                this.renderBoard();
+            }
+            
+            flag(row, col) {
+                if (this.gameOver || this.revealed[row][col]) return;
+                
+                this.flagged[row][col] = !this.flagged[row][col];
+                this.flagCount += this.flagged[row][col] ? 1 : -1;
+                this.updateMineCount();
+                this.renderBoard();
+            }
+            
+            checkWin() {
+                for (let i = 0; i < this.rows; i++) {
+                    for (let j = 0; j < this.cols; j++) {
+                        if (this.board[i][j] !== -1 && !this.revealed[i][j]) {
+                            return;
+                        }
+                    }
+                }
+                this.gameWon = true;
+                this.endGame(true);
+            }
+            
+            startTimer() {
+                if (this.timerInterval) {
+                    clearInterval(this.timerInterval);
+                }
+                this.timer = 0;
+                this.timerInterval = setInterval(() => {
+                    this.timer++;
+                    const timerElement = document.getElementById('timer');
+                    if (timerElement) {
+                        timerElement.textContent = this.timer;
+                    }
+                }, 1000);
+            }
+            
+            endGame(won) {
+                this.gameOver = true;
+                if (this.timerInterval) {
+                    clearInterval(this.timerInterval);
+                }
+                
+                const status = document.getElementById('status');
+                if (won) {
+                    status.textContent = '🎉 PARABÉNS! VOCÊ VENCEU! 🎉';
+                    status.className = 'status win';
+                } else {
+                    status.textContent = '💥 GAME OVER! 💥';
+                    status.className = 'status lose';
+                    this.revealAllMines();
+                }
+                this.renderBoard();
+            }
+            
+            revealAllMines() {
+                for (let i = 0; i < this.rows; i++) {
+                    for (let j = 0; j < this.cols; j++) {
+                        if (this.board[i][j] === -1) {
+                            this.revealed[i][j] = true;
+                        }
+                    }
+                }
+            }
+            
+            updateMineCount() {
+                document.getElementById('mineCount').textContent = this.totalMines - this.flagCount;
+            }
+            
+            renderBoard() {
+                const gameBoard = document.getElementById('gameBoard');
+                gameBoard.innerHTML = '';
+                
+                for (let i = 0; i < this.rows; i++) {
+                    const row = document.createElement('div');
+                    row.className = 'row';
+                    
+                    for (let j = 0; j < this.cols; j++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'cell';
+                        cell.dataset.row = i;
+                        cell.dataset.col = j;
+                        
+                        if (this.flagged[i][j]) {
+                            cell.textContent = '🚩';
+                            cell.classList.add('flagged');
+                        } else if (this.revealed[i][j]) {
+                            cell.classList.add('revealed');
+                            if (this.board[i][j] === -1) {
+                                cell.textContent = '💣';
+                                cell.classList.add('mine');
+                            } else if (this.board[i][j] > 0) {
+                                cell.textContent = this.board[i][j];
+                                cell.style.color = this.getNumberColor(this.board[i][j]);
+                            }
+                        }
+                        
+                        cell.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            this.reveal(i, j);
+                        });
+                        
+                        cell.addEventListener('contextmenu', (e) => {
+                            e.preventDefault();
+                            this.flag(i, j);
+                        });
+                        
+                        row.appendChild(cell);
+                    }
+                    gameBoard.appendChild(row);
+                }
+            }
+            
+            getNumberColor(num) {
+                const colors = ['', 'blue', 'green', 'red', 'purple', 'maroon', 'turquoise', 'black', 'gray'];
+                return colors[num] || 'black';
+            }
+        }
+        
+        let game;
+        
+        function newGame() {
+            if (game && game.timerInterval) {
+                clearInterval(game.timerInterval);
+            }
+            document.getElementById('status').textContent = '';
+            document.getElementById('status').className = 'status';
+            document.getElementById('timer').textContent = '0';
+            game = new CampoMinado();
+        }
+        
+        // Iniciar o jogo
+        newGame();
+    </script>
+</body>
+</html>
