@@ -142,6 +142,25 @@
             display: inline-block;
             backdrop-filter: blur(10px);
         }
+        
+        .footer {
+            margin-top: 30px;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            background: rgba(255,255,255,0.1);
+            padding: 10px 20px;
+            border-radius: 25px;
+            display: inline-block;
+            backdrop-filter: blur(10px);
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+        
+        @keyframes glow {
+            from { box-shadow: 0 0 10px rgba(255,255,255,0.3); }
+            to { box-shadow: 0 0 20px rgba(255,255,255,0.6); }
+        }
     </style>
 </head>
 <body>
@@ -161,6 +180,10 @@
         <p><strong>Como jogar:</strong><br>
         Clique esquerdo: revelar célula<br>
         Clique direito: marcar/desmarcar bandeira</p>
+    </div>
+    
+    <div class="footer">
+        <p>🤖 Esse projeto foi criado com AMAZON Q! 🚀</p>
     </div>
 
     <script>
